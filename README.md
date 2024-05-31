@@ -20,3 +20,7 @@ I skal bygge en backend, altså en API, som jeres mobilapplikation skal kontakte
 #### Mobile
 
 Her er jeres Flutter applikation, vi anbefaler og underviser i Flutter og Dart, hvis I har erfaring med et andet framework såsom Kotlin, Swift, MAUI eller React Native kan der gives tilladelse til at bruge det i stedet!
+
+# Hosting
+
+Vi anbefaler [Render.com](https://render.com/) til at hoste jeres API samt Flutter for web. Med Flutter kan vi selvfølgelig også hente det ned på en Android eller IOS enhed!
