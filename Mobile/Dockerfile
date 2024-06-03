@@ -1,31 +1,40 @@
-# Use the official Dart image as the base image
-FROM dart:stable AS builder
+# Install Operating system and dependencies
+FROM ubuntu:20.04
 
-# Create a new user and set the home directory
-RUN useradd -ms /bin/bash flutteruser
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Set the working directory
-WORKDIR /app
+RUN apt-get update 
+RUN apt-get install -y curl git wget unzip libgconf-2-4 gdb libstdc++6 libglu1-mesa fonts-droid-fallback python3
+RUN apt-get clean
 
-# Change ownership of the working directory to the new user
-RUN chown -R flutteruser:flutteruser /app
+ENV DEBIAN_FRONTEND=dialog
+ENV PUB_HOSTED_URL=https://pub.flutter-io.cn
+ENV FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 
-# Switch to the new user
-USER flutteruser
+# download Flutter SDK from Flutter Github repo
+RUN git clone https://github.com/flutter/flutter.git /usr/local/flutter
 
-# Copy the application files to the container
-COPY Mobile /app
+# Set flutter environment path
+ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
 
-# Change to the Mobile directory
-WORKDIR /app
+# Run flutter doctor
+RUN flutter doctor
 
-# Build the application
-RUN flutter build
+# Enable flutter web
+RUN flutter channel master
+RUN flutter upgrade
+RUN flutter config --enable-web
 
-# Use a minimal image for the final stage
-FROM scratch AS final
-WORKDIR /app
-COPY --from=builder /app/build /app
+# Copy files to container and build
+RUN mkdir /app/
+COPY . /app/
+WORKDIR /app/
+RUN flutter build web
 
-# Run the application
-ENTRYPOINT ["/app/your_flutter_executable"]
+# Record the exposed port
+EXPOSE 9000
+
+# make server startup script executable and start the web server
+RUN ["chmod", "+x", "/app/server/server.sh"]
+
+ENTRYPOINT [ "/app/web/server.sh"]
