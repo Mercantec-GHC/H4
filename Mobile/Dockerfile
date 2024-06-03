@@ -19,9 +19,6 @@ COPY Mobile /app
 # Change to the Mobile directory
 WORKDIR /app
 
-# Install dependencies
-RUN flutter pub get
-
 # Build the application
 RUN flutter build
 
