@@ -1,26 +1,34 @@
-# Stage 1: Build the application
-FROM cirrusci/flutter:stable AS builder
+# Use the official Dart image as the base image
+FROM dart:stable AS builder
 
-# Set working directory
+# Create a new user and set the home directory
+RUN useradd -ms /bin/bash flutteruser
+
+# Set the working directory
 WORKDIR /app
 
-# Copy the Flutter project files
-COPY . .
+# Change ownership of the working directory to the new user
+RUN chown -R flutteruser:flutteruser /app
+
+# Switch to the new user
+USER flutteruser
+
+# Copy the application files to the container
+COPY Mobile /app
+
+# Change to the Mobile directory
+WORKDIR /app
 
 # Install dependencies
 RUN flutter pub get
 
 # Build the application
-RUN flutter build web
+RUN flutter build
 
-# Stage 2: Serve the application using nginx
-FROM nginx:alpine
+# Use a minimal image for the final stage
+FROM scratch AS final
+WORKDIR /app
+COPY --from=builder /app/build /app
 
-# Copy the build output from the builder stage
-COPY --from=builder /app/build/web /usr/share/nginx/html
-
-# Expose the necessary port
-EXPOSE 80
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Run the application
+ENTRYPOINT ["/app/your_flutter_executable"]
