@@ -1,27 +1,26 @@
-# Use the official Flutter image to build the app
-FROM cirrusci/flutter:stable AS build
+# Stage 1: Build the application
+FROM cirrusci/flutter:stable AS builder
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# Copy the pubspec files and download dependencies
-COPY pubspec.* ./
-RUN flutter pub get
-
-# Copy the rest of the application code
+# Copy the Flutter project files
 COPY . .
 
-# Build the Flutter web application
+# Install dependencies
+RUN flutter pub get
+
+# Build the application
 RUN flutter build web
 
-# Use the official Nginx image as the base image for the final stage
+# Stage 2: Serve the application using nginx
 FROM nginx:alpine
 
-# Copy the build output to the Nginx HTML directory
-COPY --from=build /app/build/web /usr/share/nginx/html
+# Copy the build output from the builder stage
+COPY --from=builder /app/build/web /usr/share/nginx/html
 
-# Expose port 80 to the outside world
+# Expose the necessary port
 EXPOSE 80
 
-# Start Nginx when the container launches
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
