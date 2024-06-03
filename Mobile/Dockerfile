@@ -1,40 +1,33 @@
-# Install Operating system and dependencies
-FROM ubuntu:20.04
+# Use the official Dart image as the base image
+FROM dart:stable AS builder
 
-ENV DEBIAN_FRONTEND=noninteractive
+# Create a new user and set the home directory
+RUN useradd -ms /bin/bash flutteruser
 
-RUN apt-get update 
-RUN apt-get install -y curl git wget unzip libgconf-2-4 gdb libstdc++6 libglu1-mesa fonts-droid-fallback python3
-RUN apt-get clean
+# Set the working directory
+WORKDIR /app
 
-ENV DEBIAN_FRONTEND=dialog
-ENV PUB_HOSTED_URL=https://pub.flutter-io.cn
-ENV FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
+# Change ownership of the working directory to the new user
+RUN chown -R flutteruser:flutteruser /app
 
-# download Flutter SDK from Flutter Github repo
-RUN git clone https://github.com/flutter/flutter.git /usr/local/flutter
+# Switch to the new user
+USER flutteruser
 
-# Set flutter environment path
-ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
+# Copy the application files to the container
+COPY Mobile /app
 
-# Run flutter doctor
-RUN flutter doctor
+# Install dependencies
+RUN flutter pub get
 
-# Enable flutter web
-RUN flutter channel master
-RUN flutter upgrade
-RUN flutter config --enable-web
-
-# Copy files to container and build
-RUN mkdir /app/
-COPY . /app/
-WORKDIR /app/
+# Build the application for the web
 RUN flutter build web
 
-# Record the exposed port
-EXPOSE 9000
+# Use the official NGINX image to serve the built files
+FROM nginx:alpine
+COPY --from=builder /app/build/web /usr/share/nginx/html
 
-# make server startup script executable and start the web server
-RUN ["chmod", "+x", "/app/server/server.sh"]
+# Expose port 80
+EXPOSE 80
 
-ENTRYPOINT [ "/app/web/server.sh"]
+# Start NGINX
+ENTRYPOINT ["nginx", "-g", "daemon off;"]
